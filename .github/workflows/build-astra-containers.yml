@@ -1,0 +1,38 @@
+name: build-astra-containers
+
+on:
+  workflow_call:
+    inputs:
+      distr:
+        description: "Linux distribution"
+        type: string
+        required: true
+
+jobs:
+  build-astra-containers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        run: |
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.github_token }}
+
+      - name: Setup debootstrap
+        run: |
+          sudo -E apt-get install -y debootstrap && sudo -E cp /usr/share/debootstrap/scripts/sid /usr/share/debootstrap/scripts/orel
+
+      - name: Build rootfs
+        run: |
+          cd ${{ inputs.distr }} && ./make_image.sh
+
+      - name: Build container
+        run: |
+          cd ${{ inputs.distr }}/docker-files && docker buildx build -t ghcr.io/${{ github.repository }}-${{ inputs.distr }}:${{ github.run_number }} \
+          -t ghcr.io/${{ github.repository }}-${{ inputs.distr }}:latest .
+
+      - name: Push container
+        run: |
+          docker push -a ghcr.io/${{ github.repository }}-${{ inputs.distr }}

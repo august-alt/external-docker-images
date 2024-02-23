@@ -1,0 +1,21 @@
+name: containers-ci
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: [ "*" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-astra-containers:
+    uses: ./.github/workflows/build-astra-containers.yml
+    secrets: inherit
+    strategy:
+      matrix:
+        os: [ { distr: "astra_2.12_x86-64" } ]
+    with:
+      distr: ${{ matrix.os.distr }}
